@@ -9,113 +9,153 @@ app.use(bodyParser.json())
 
 const VERIFY_TOKEN = "salon_verify_123"
 
-const ACCESS_TOKEN = "EAAbkyaOFBiABQ0RAA9VsT8gWtcNEVFgyNju4UIJwamm2lbZAmpZCby6z3h3THn6wZCjU1oEGj1BgbMLDLScVH05Y33dOZA5U8IuOJhfgenkjKf8N0fUnBrmyLn0NnEYJ7SL3PO2YcReNmW95Jq2ZAVvoVFy0dRgmqWJubPZB1nheo36b1r14x1HstMZBho2JzetP5BRAaTGYFVwgABG0fQAhfAJWl7UUsSR3RSZAXPTFO7Q0OihIN0B4VES9bPQnsR5EBa8CmvdmX5109t5VeRKe"
+const ACCESS_TOKEN = "EAAbkyaOFBiABQuL0Sj57SOtZBczPdzaMliEFZBiAqa5s8Vl18ZCzIS70fJWnp1JZCxeUoBP2YR4r5dolns8PcsrXIVCzpCaP9i2qpcY5vdZB2Nu3QwdQ2NMTEAtnqtavfnYwl8gYELZCjp7VQzYPsT650PFlOJhObjkABIcf7YUAMHvw3GLZC7z1TSoaLl7vQZDZD"
 
 const PHONE_NUMBER_ID = "910037188870426"
 
 /* ---------------- WEBHOOK VERIFY ---------------- */
 
-app.get("/webhook",(req,res)=>{
+app.get("/webhook", (req, res) => {
 
-const mode = req.query["hub.mode"]
-const token = req.query["hub.verify_token"]
-const challenge = req.query["hub.challenge"]
+    const mode = req.query["hub.mode"]
+    const token = req.query["hub.verify_token"]
+    const challenge = req.query["hub.challenge"]
 
-if(mode === "subscribe" && token === VERIFY_TOKEN){
+    if (mode === "subscribe" && token === VERIFY_TOKEN) {
 
-console.log("Webhook verified")
+        console.log("Webhook verified")
 
-res.status(200).send(challenge)
+        res.status(200).send(challenge)
 
-}else{
+    } else {
 
-res.sendStatus(403)
+        res.sendStatus(403)
 
-}
+    }
 
 })
 
 /* ---------------- RECEIVE MESSAGE ---------------- */
 
-app.post("/webhook",async(req,res)=>{
+app.post("/webhook", async (req, res) => {
 
-const body = req.body
+    const body = req.body
 
-if(body.entry){
+    if (body.entry) {
 
-const message =
-body.entry[0].changes[0].value.messages?.[0]
+        const message =
+            body.entry[0].changes[0].value.messages?.[0]
 
-if(message){
+        if (message) {
 
-const from = message.from
-const text = message.text?.body
+            const from = message.from
+            const text = message.text?.body
 
-console.log("User:",text)
+            console.log("User:", text)
 
-const reply = getBotReply(text)
+            const reply = getBotReply(text)
 
-await sendMessage(from,reply)
+            await sendMessage(from, reply)
 
-}
+        }
 
-}
+    }
 
-res.sendStatus(200)
+    res.sendStatus(200)
 
 })
 
 /* ---------------- BOT LOGIC ---------------- */
 
-function getBotReply(text){
+function getBotReply(text) {
 
-text = text.toLowerCase()
+    text = text.toLowerCase().trim()
 
-if(text === "hi" || text === "hello"){
-return "Hello 👋 Welcome to Lakme Salon!"
-}
+    // MENU
+    const menu = `Hello 👋 Welcome to Lakme Salon
 
-if(text === "services"){
-return "We offer Haircut, Facial, Makeup."
-}
+Please choose an option:
 
-if(text === "price"){
-return "Haircut starts from ₹500."
-}
+1️⃣ Services
+2️⃣ Book Appointment
+3️⃣ Price List
+4️⃣ Offers
+5️⃣ Talk to Human`
 
-return "Sorry, I didn't understand. Type 'services' to see options."
+
+    // If user sends anything other than numbers → show menu
+    if (!["1", "2", "3", "4", "5"].includes(text)) {
+        return menu
+    }
+
+
+    if (text === "1") {
+        return `Our services:
+
+💇 Haircut
+💄 Makeup
+💆 Facial
+💅 Manicure & Pedicure`
+    }
+
+    if (text === "2") {
+        return `To book an appointment please send:
+
+Name:
+Preferred Service:
+Preferred Date:`
+    }
+
+    if (text === "3") {
+        return `Price List:
+
+Haircut — ₹500
+Facial — ₹1200
+Makeup — ₹2500`
+    }
+
+    if (text === "4") {
+        return `🎉 Current Offers
+
+20% off on Haircut this week!
+Free consultation with Facial.`
+    }
+
+    if (text === "5") {
+        return `Connecting you to our support team. Please wait.`
+    }
 
 }
 
 /* ---------------- SEND MESSAGE ---------------- */
 
-async function sendMessage(to,message){
+async function sendMessage(to, message) {
 
-try{
+    try {
 
-await axios.post(
+        await axios.post(
 
-`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`,
+            `https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`,
 
-{
-messaging_product:"whatsapp",
-to:to,
-text:{body:message}
-},
+            {
+                messaging_product: "whatsapp",
+                to: to,
+                text: { body: message }
+            },
 
-{
-headers:{
-Authorization:`Bearer ${ACCESS_TOKEN}`
-}
-}
+            {
+                headers: {
+                    Authorization: `Bearer ${ACCESS_TOKEN}`
+                }
+            }
 
-)
+        )
 
-}catch(err){
+    } catch (err) {
 
-console.log(err.response?.data || err)
+        console.log(err.response?.data || err)
 
-}
+    }
 
 }
 
@@ -123,6 +163,6 @@ console.log(err.response?.data || err)
 
 const PORT = process.env.PORT || 3000
 
-app.listen(PORT,()=>{
-console.log("Bot running on port",PORT)
+app.listen(PORT, () => {
+    console.log("Bot running on port", PORT)
 })
