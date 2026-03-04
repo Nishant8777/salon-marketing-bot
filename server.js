@@ -8,13 +8,10 @@ app.use(bodyParser.json())
 
 /* ---------------- SETTINGS ---------------- */
 
-const VERIFY_TOKEN = "salon_verify_123"
-
-const ACCESS_TOKEN = "EAAbkyaOFBiABQuL0Sj57SOtZBczPdzaMliEFZBiAqa5s8Vl18ZCzIS70fJWnp1JZCxeUoBP2YR4r5dolns8PcsrXIVCzpCaP9i2qpcY5vdZB2Nu3QwdQ2NMTEAtnqtavfnYwl8gYELZCjp7VQzYPsT650PFlOJhObjkABIcf7YUAMHvw3GLZC7z1TSoaLl7vQZDZD"
-
-const PHONE_NUMBER_ID = "910037188870426"
-
-const GEMINI_API_KEY = "AIzaSyApdi1vmvuUtYMcFS9iGB0mNddHRurvryw"
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN
+const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 
 /* ---------------- GEMINI ---------------- */
 
