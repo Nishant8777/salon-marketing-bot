@@ -1,3 +1,4 @@
+import { GoogleGenerativeAI } from "@google/generative-ai"
 import express from "express"
 import axios from "axios"
 import bodyParser from "body-parser"
@@ -13,25 +14,34 @@ const ACCESS_TOKEN = "EAAbkyaOFBiABQuL0Sj57SOtZBczPdzaMliEFZBiAqa5s8Vl18ZCzIS70f
 
 const PHONE_NUMBER_ID = "910037188870426"
 
+const GEMINI_API_KEY = "AIzaSyApdi1vmvuUtYMcFS9iGB0mNddHRurvryw"
+
+/* ---------------- GEMINI ---------------- */
+
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
+
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash"
+})
+
 /* ---------------- WEBHOOK VERIFY ---------------- */
 
 app.get("/webhook", (req, res) => {
 
-    const mode = req.query["hub.mode"]
-    const token = req.query["hub.verify_token"]
-    const challenge = req.query["hub.challenge"]
+  const mode = req.query["hub.mode"]
+  const token = req.query["hub.verify_token"]
+  const challenge = req.query["hub.challenge"]
 
-    if (mode === "subscribe" && token === VERIFY_TOKEN) {
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
 
-        console.log("Webhook verified")
+    console.log("Webhook verified")
+    res.status(200).send(challenge)
 
-        res.status(200).send(challenge)
+  } else {
 
-    } else {
+    res.sendStatus(403)
 
-        res.sendStatus(403)
-
-    }
+  }
 
 })
 
@@ -39,91 +49,66 @@ app.get("/webhook", (req, res) => {
 
 app.post("/webhook", async (req, res) => {
 
-    const body = req.body
+  const body = req.body
 
-    if (body.entry) {
+  if (body.entry) {
 
-        const message =
-            body.entry[0].changes[0].value.messages?.[0]
+    const message =
+      body.entry[0].changes[0].value.messages?.[0]
 
-        if (message) {
+    if (message) {
 
-            const from = message.from
-            const text = message.text?.body
+      const from = message.from
+      const text = message.text?.body || ""
 
-            console.log("User:", text)
+      console.log("User:", text)
 
-            const reply = getBotReply(text)
+      const reply = await getBotReply(text)
 
-            await sendMessage(from, reply)
-
-        }
+      await sendMessage(from, reply)
 
     }
 
-    res.sendStatus(200)
+  }
+
+  res.sendStatus(200)
 
 })
 
 /* ---------------- BOT LOGIC ---------------- */
 
-function getBotReply(text) {
+async function getBotReply(text) {
 
-    text = text.toLowerCase().trim()
+  try {
 
-    // MENU
-    const menu = `Hello 👋 Welcome to Lakme Salon
+    const prompt = `
+You are a friendly WhatsApp assistant for Lakme Salon.
 
-Please choose an option:
+Services:
+Haircut ₹500
+Facial ₹1200
+Makeup ₹2500
 
-1️⃣ Services
-2️⃣ Book Appointment
-3️⃣ Price List
-4️⃣ Offers
-5️⃣ Talk to Human`
+Rules:
+- Be polite
+- Reply in short messages
+- Help customers with salon services
+- If user greets, welcome them.
 
+User message: ${text}
+`
 
-    // If user sends anything other than numbers → show menu
-    if (!["1", "2", "3", "4", "5"].includes(text)) {
-        return menu
-    }
+    const result = await model.generateContent(prompt)
 
+    return result.response.text()
 
-    if (text === "1") {
-        return `Our services:
+  } catch (err) {
 
-💇 Haircut
-💄 Makeup
-💆 Facial
-💅 Manicure & Pedicure`
-    }
+    console.log("AI error:", err)
 
-    if (text === "2") {
-        return `To book an appointment please send:
+    return "Sorry, I'm having trouble replying right now."
 
-Name:
-Preferred Service:
-Preferred Date:`
-    }
-
-    if (text === "3") {
-        return `Price List:
-
-Haircut — ₹500
-Facial — ₹1200
-Makeup — ₹2500`
-    }
-
-    if (text === "4") {
-        return `🎉 Current Offers
-
-20% off on Haircut this week!
-Free consultation with Facial.`
-    }
-
-    if (text === "5") {
-        return `Connecting you to our support team. Please wait.`
-    }
+  }
 
 }
 
@@ -131,31 +116,31 @@ Free consultation with Facial.`
 
 async function sendMessage(to, message) {
 
-    try {
+  try {
 
-        await axios.post(
+    await axios.post(
 
-            `https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`,
+      `https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`,
 
-            {
-                messaging_product: "whatsapp",
-                to: to,
-                text: { body: message }
-            },
+      {
+        messaging_product: "whatsapp",
+        to: to,
+        text: { body: message }
+      },
 
-            {
-                headers: {
-                    Authorization: `Bearer ${ACCESS_TOKEN}`
-                }
-            }
+      {
+        headers: {
+          Authorization: `Bearer ${ACCESS_TOKEN}`
+        }
+      }
 
-        )
+    )
 
-    } catch (err) {
+  } catch (err) {
 
-        console.log(err.response?.data || err)
+    console.log(err.response?.data || err)
 
-    }
+  }
 
 }
 
@@ -164,5 +149,5 @@ async function sendMessage(to, message) {
 const PORT = process.env.PORT || 3000
 
 app.listen(PORT, () => {
-    console.log("Bot running on port", PORT)
+  console.log("Bot running on port", PORT)
 })
