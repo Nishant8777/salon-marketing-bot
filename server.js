@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
 import express from "express"
 import axios from "axios"
 import bodyParser from "body-parser"
@@ -11,15 +10,6 @@ app.use(bodyParser.json())
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-
-/* ---------------- GEMINI ---------------- */
-
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
-
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash"
-})
 
 /* ---------------- WEBHOOK VERIFY ---------------- */
 
@@ -60,7 +50,7 @@ app.post("/webhook", async (req, res) => {
 
       console.log("User:", text)
 
-      const reply = await getBotReply(text)
+      const reply = getBotReply(text)
 
       await sendMessage(from, reply)
 
@@ -74,39 +64,158 @@ app.post("/webhook", async (req, res) => {
 
 /* ---------------- BOT LOGIC ---------------- */
 
-async function getBotReply(text) {
+function getBotReply(text) {
 
-  try {
+  text = text.toLowerCase().trim()
 
-    const prompt = `
-You are a friendly WhatsApp assistant for Lakme Salon.
+  const menu = `
+👋 Welcome to Lakme Salon
 
-Services:
-Haircut ₹500
-Facial ₹1200
-Makeup ₹2500
+Please choose an option:
 
-Rules:
-- Be polite
-- Reply in short messages
-- Help customers with salon services
-- If user greets, welcome them.
-
-User message: ${text}
+1️⃣ Services
+2️⃣ Book Appointment
+3️⃣ Price List
+4️⃣ Current Offers
+5️⃣ Talk to Support
 `
 
-    const result = await model.generateContent(prompt)
+  /* greetings */
 
-    return result.response.text()
-
-  } catch (err) {
-
-    console.log("AI error:", err)
-
-    return "Sorry, I'm having trouble replying right now."
-
+  if (
+    text.includes("hi") ||
+    text.includes("hello") ||
+    text.includes("hey")
+  ) {
+    return menu
   }
 
+  /* menu */
+
+  if (text === "menu") {
+    return menu
+  }
+
+  /* services */
+
+  if (
+    text === "1" ||
+    text.includes("services")
+  ) {
+
+    return `
+💇 Our Services
+
+Haircut
+Facial
+Makeup
+Hair Coloring
+Manicure
+Pedicure
+
+Reply with a service name to know the price.
+`
+  }
+
+  /* price list */
+
+  if (
+    text === "3" ||
+    text.includes("price")
+  ) {
+
+    return `
+💰 Price List
+
+Haircut — ₹500
+Facial — ₹1200
+Makeup — ₹2500
+Hair Color — ₹2000
+Manicure — ₹800
+Pedicure — ₹900
+`
+  }
+
+  /* offers */
+
+  if (
+    text === "4" ||
+    text.includes("offer")
+  ) {
+
+    return `
+🎉 Current Offers
+
+20% OFF on Haircut this week!
+
+Free consultation with Facial treatment.
+`
+  }
+
+  /* booking */
+
+  if (
+    text === "2" ||
+    text.includes("book")
+  ) {
+
+    return `
+📅 Appointment Booking
+
+Please send:
+
+Name
+Service
+Preferred Date
+Preferred Time
+
+Example:
+Nishant
+Haircut
+Friday
+5 PM
+`
+  }
+
+  /* specific service questions */
+
+  if (text.includes("haircut")) {
+    return "💇 Haircut starts from ₹500.\nWould you like to book an appointment?"
+  }
+
+  if (text.includes("facial")) {
+    return "💆 Facial service costs ₹1200.\nWould you like to book?"
+  }
+
+  if (text.includes("makeup")) {
+    return "💄 Makeup service costs ₹2500."
+  }
+
+  if (text.includes("manicure")) {
+    return "💅 Manicure costs ₹800."
+  }
+
+  if (text.includes("pedicure")) {
+    return "🦶 Pedicure costs ₹900."
+  }
+
+  if (text.includes("color")) {
+    return "🎨 Hair coloring starts from ₹2000."
+  }
+
+  /* support */
+
+  if (text === "5" || text.includes("support")) {
+    return "Our team will contact you shortly. 😊"
+  }
+
+  /* fallback */
+
+  return `
+Sorry, I didn't understand.
+
+Type *menu* to see options.
+`
 }
 
 /* ---------------- SEND MESSAGE ---------------- */
