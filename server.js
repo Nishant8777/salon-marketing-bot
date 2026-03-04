@@ -21,7 +21,7 @@ const GEMINI_API_KEY = "AIzaSyApdi1vmvuUtYMcFS9iGB0mNddHRurvryw"
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash"
+  model: "gemini-1.5-flash-latest"
 })
 
 /* ---------------- WEBHOOK VERIFY ---------------- */
